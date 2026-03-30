@@ -84,7 +84,6 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
 
     return (
         <div className="p-6 space-y-8">
-            {/* Controls */}
             <div className="flex justify-between items-center">
                 <div>
                     <label className="text-light-muted text-sm mr-3">Select Date:</label>
@@ -101,7 +100,6 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                 />
             </div>
 
-            {/* Current Weather Display */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <WeatherCard
                     title="Current Temperature"
@@ -128,7 +126,6 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                 />
             </div>
 
-            {/* Additional Metrics Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {dayIndex > -1 && (
                     <>
@@ -165,7 +162,6 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                 />
             </div>
 
-            {/* Air Quality Metrics */}
             <div>
                 <h2 className="text-2xl font-bold text-light mb-4">Air Quality Metrics</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -203,9 +199,8 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                 </div>
             </div>
 
-            {/* Hourly Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Temperature Chart */}
+                
                 <ChartWrapper title="Temperature Trend (Hourly)">
                     <ResponsiveContainer width="100%" height={300}>
                         <AreaChart data={hourlyChartData}>
@@ -233,7 +228,6 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                     </ResponsiveContainer>
                 </ChartWrapper>
 
-                {/* Humidity Chart */}
                 <ChartWrapper title="Relative Humidity (Hourly)">
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={hourlyChartData}>
@@ -255,7 +249,6 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                     </ResponsiveContainer>
                 </ChartWrapper>
 
-                {/* Precipitation Chart */}
                 <ChartWrapper title="Precipitation (Hourly)">
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={hourlyChartData}>
@@ -271,7 +264,6 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                     </ResponsiveContainer>
                 </ChartWrapper>
 
-                {/* Visibility Chart */}
                 <ChartWrapper title="Visibility (Hourly)">
                     <ResponsiveContainer width="100%" height={300}>
                         <AreaChart data={hourlyChartData}>
@@ -299,7 +291,6 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                     </ResponsiveContainer>
                 </ChartWrapper>
 
-                {/* Wind Speed Chart */}
                 <ChartWrapper title="Wind Speed (Hourly)">
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={hourlyChartData}>
@@ -321,7 +312,6 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                     </ResponsiveContainer>
                 </ChartWrapper>
 
-                {/* PM10 & PM2.5 Chart */}
                 <ChartWrapper title="Particulate Matter (Hourly)">
                     <ResponsiveContainer width="100%" height={300}>
                         <ComposedChart data={hourlyChartData}>
