@@ -24,11 +24,8 @@ import {
     getTemperatureUnit,
 } from '../utils/convertTemp';
 import {
-    formatDate,
     formatHourlyTime,
     getWeatherDescription,
-    getAQILabel,
-    getAQIColor,
     getWindDirectionText,
 } from '../utils/formData';
 import { MdWaterDrop, MdVisibility, MdAir, MdWbSunny, MdThermostat } from 'react-icons/md';
@@ -52,8 +49,17 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
     if (loading) return <Loader />;
     if (error || !weatherData || !airQualityData) {
         return (
-            <div className="p-6 text-center text-red-400">
-                {error || 'Failed to load weather data'}
+            <div className="p-6 text-center">
+                <div className="card-primary max-w-md mx-auto mt-10">
+                    <p className="text-red-400 text-lg font-semibold mb-2">⚠️ Failed to load data</p>
+                    <p className="text-light/60 text-sm">{error || 'Weather or air quality data unavailable.'}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="btn-primary mt-4"
+                    >
+                        Retry
+                    </button>
+                </div>
             </div>
         );
     }
@@ -67,24 +73,28 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
         const startIdx = dayIndex * 24;
         const endIdx = startIdx + 24;
 
-        return weatherData.hourly.time.slice(startIdx, endIdx).map((time: string, idx: number) => ({
-            time: formatHourlyTime(time),
-            temp: formatTemperature(
-                weatherData.hourly.temperature_2m[startIdx + idx],
-                isFahrenheit
-            ),
-            humidity: weatherData.hourly.relative_humidity_2m[startIdx + idx],
-            precipitation: weatherData.hourly.precipitation[startIdx + idx],
-            visibility: weatherData.hourly.visibility[startIdx + idx] / 1000,
-            windSpeed: weatherData.hourly.wind_speed_10m[startIdx + idx],
-            pm10: airQualityData.hourly.pm10[startIdx + idx],
-            pm2_5: airQualityData.hourly.pm2_5[startIdx + idx],
-        }));
+        return weatherData.hourly.time.slice(startIdx, endIdx).map((time: string, idx: number) => {
+            const i = startIdx + idx;
+            return {
+                time: formatHourlyTime(time),
+                temp: parseFloat(
+                    formatTemperature(weatherData.hourly.temperature_2m[i] ?? 0, isFahrenheit).toFixed(1)
+                ),
+                humidity: weatherData.hourly.relative_humidity_2m[i] ?? 0,
+                precipitation: weatherData.hourly.precipitation[i] ?? 0,
+                visibility: ((weatherData.hourly.visibility[i] ?? 0) / 1000),
+                windSpeed: weatherData.hourly.wind_speed_10m[i] ?? 0,
+                pm10: airQualityData.hourly.pm10[i] ?? 0,
+                pm2_5: airQualityData.hourly.pm2_5[i] ?? 0,
+            };
+        });
     }, [dayIndex, weatherData, airQualityData, isFahrenheit]);
+
+    const safeIdx = dayIndex > -1 ? dayIndex : 0;
 
     return (
         <div className="p-6 space-y-8">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
                     <label className="text-light-muted text-sm mr-3">Select Date:</label>
                     <input
@@ -109,7 +119,7 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                 />
                 <WeatherCard
                     title="Weather"
-                    value={getWeatherDescription(weatherData.daily.weather_code[dayIndex > -1 ? dayIndex : 0])}
+                    value={getWeatherDescription(weatherData.daily.weather_code[safeIdx] ?? 0)}
                     icon={<MdWbSunny />}
                 />
                 <WeatherCard
@@ -127,80 +137,87 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {dayIndex > -1 && (
-                    <>
-                        <WeatherCard
-                            title="Min Temperature"
-                            value={Math.round(formatTemperature(weatherData.daily.temperature_2m_min[dayIndex], isFahrenheit))}
-                            unit={unit}
-                        />
-                        <WeatherCard
-                            title="Max Temperature"
-                            value={Math.round(formatTemperature(weatherData.daily.temperature_2m_max[dayIndex], isFahrenheit))}
-                            unit={unit}
-                        />
-                    </>
-                )}
+                <WeatherCard
+                    title="Min Temperature"
+                    value={Math.round(
+                        formatTemperature(weatherData.daily.temperature_2m_min[safeIdx] ?? 0, isFahrenheit)
+                    )}
+                    unit={unit}
+                />
+                <WeatherCard
+                    title="Max Temperature"
+                    value={Math.round(
+                        formatTemperature(weatherData.daily.temperature_2m_max[safeIdx] ?? 0, isFahrenheit)
+                    )}
+                    unit={unit}
+                />
                 <WeatherCard
                     title="Precipitation"
-                    value={weatherData.current.precipitation.toFixed(1)}
+                    value={(weatherData.current.precipitation ?? 0).toFixed(1)}
                     unit="mm"
                 />
                 <WeatherCard
                     title="Visibility"
-                    value={(weatherData.hourly.visibility[0] / 1000).toFixed(1)}
+                    value={((weatherData.hourly.visibility[0] ?? 0) / 1000).toFixed(1)}
                     unit="km"
                     icon={<MdVisibility />}
                 />
                 <WeatherCard
                     title="UV Index"
-                    value={weatherData.hourly.uv_index[0].toFixed(1)}
+                    value={(weatherData.hourly.uv_index[0] ?? 0).toFixed(1)}
                 />
                 <WeatherCard
                     title="Wind Direction"
-                    value={getWindDirectionText(weatherData.current.wind_direction_10m)}
+                    value={getWindDirectionText(weatherData.current.wind_direction_10m ?? 0)}
+                />
+                <WeatherCard
+                    title="Precip. Probability"
+                    value={weatherData.daily.precipitation_probability_max[safeIdx] ?? 0}
+                    unit="%"
+                />
+                <WeatherCard
+                    title="Sunrise"
+                    value={weatherData.daily.sunrise[safeIdx]?.split('T')[1]?.slice(0, 5) ?? '--:--'}
                 />
             </div>
 
             <div>
                 <h2 className="text-2xl font-bold text-light mb-4">Air Quality Metrics</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <WeatherCard title="PM10" value={airQualityData.hourly.pm10[0].toFixed(1)} unit="μg/m³" />
+                    <WeatherCard
+                        title="PM10"
+                        value={(airQualityData.hourly.pm10[0] ?? 0).toFixed(1)}
+                        unit="μg/m³"
+                    />
                     <WeatherCard
                         title="PM2.5"
-                        value={airQualityData.hourly.pm2_5[0].toFixed(1)}
+                        value={(airQualityData.hourly.pm2_5[0] ?? 0).toFixed(1)}
                         unit="μg/m³"
                     />
                     <WeatherCard
                         title="Carbon Monoxide"
-                        value={airQualityData.hourly.carbon_monoxide[0].toFixed(2)}
+                        value={(airQualityData.hourly.carbon_monoxide[0] ?? 0).toFixed(2)}
                         unit="μmol/m³"
                     />
                     <WeatherCard
                         title="CO₂"
-                        value={airQualityData.hourly.carbon_dioxide[0].toFixed(0)}
+                        value={(airQualityData.hourly.carbon_dioxide[0] ?? 0).toFixed(0)}
                         unit="μmol/m³"
                     />
                     <WeatherCard
                         title="NO₂"
-                        value={airQualityData.hourly.nitrogen_dioxide[0].toFixed(2)}
+                        value={(airQualityData.hourly.nitrogen_dioxide[0] ?? 0).toFixed(2)}
                         unit="μmol/m³"
                     />
                     <WeatherCard
                         title="SO₂"
-                        value={airQualityData.hourly.sulphur_dioxide[0].toFixed(2)}
+                        value={(airQualityData.hourly.sulphur_dioxide[0] ?? 0).toFixed(2)}
                         unit="μmol/m³"
-                    />
-                    <WeatherCard
-                        title="Precipitation Probability"
-                        value={dayIndex > -1 ? weatherData.daily.precipitation_probability_max[dayIndex] : 0}
-                        unit="%"
                     />
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
                 <ChartWrapper title="Temperature Trend (Hourly)">
                     <ResponsiveContainer width="100%" height={300}>
                         <AreaChart data={hourlyChartData}>
@@ -211,19 +228,13 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(124,58,237,0.2)" />
-                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                            <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '11px' }} interval={3} />
+                            <YAxis stroke="#9ca3af" style={{ fontSize: '11px' }} />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#2d3561', border: '1px solid #7c3aed' }}
                                 labelStyle={{ color: '#e0e7ff' }}
                             />
-                            <Area
-                                type="monotone"
-                                dataKey="temp"
-                                stroke="#7c3aed"
-                                fillOpacity={1}
-                                fill="url(#colorTemp)"
-                            />
+                            <Area type="monotone" dataKey="temp" name={`Temp (${unit})`} stroke="#7c3aed" fillOpacity={1} fill="url(#colorTemp)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </ChartWrapper>
@@ -232,19 +243,13 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={hourlyChartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(124,58,237,0.2)" />
-                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                            <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} domain={[0, 100]} />
+                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '11px' }} interval={3} />
+                            <YAxis stroke="#9ca3af" style={{ fontSize: '11px' }} domain={[0, 100]} />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#2d3561', border: '1px solid #7c3aed' }}
                                 labelStyle={{ color: '#e0e7ff' }}
                             />
-                            <Line
-                                type="monotone"
-                                dataKey="humidity"
-                                stroke="#3b82f6"
-                                dot={false}
-                                strokeWidth={2}
-                            />
+                            <Line type="monotone" dataKey="humidity" name="Humidity (%)" stroke="#3b82f6" dot={false} strokeWidth={2} />
                         </LineChart>
                     </ResponsiveContainer>
                 </ChartWrapper>
@@ -253,13 +258,13 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={hourlyChartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(124,58,237,0.2)" />
-                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                            <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '11px' }} interval={3} />
+                            <YAxis stroke="#9ca3af" style={{ fontSize: '11px' }} />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#2d3561', border: '1px solid #7c3aed' }}
                                 labelStyle={{ color: '#e0e7ff' }}
                             />
-                            <Bar dataKey="precipitation" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="precipitation" name="Precip (mm)" fill="#06b6d4" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartWrapper>
@@ -274,19 +279,13 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(124,58,237,0.2)" />
-                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                            <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '11px' }} interval={3} />
+                            <YAxis stroke="#9ca3af" style={{ fontSize: '11px' }} />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#2d3561', border: '1px solid #7c3aed' }}
                                 labelStyle={{ color: '#e0e7ff' }}
                             />
-                            <Area
-                                type="monotone"
-                                dataKey="visibility"
-                                stroke="#10b981"
-                                fillOpacity={1}
-                                fill="url(#colorVis)"
-                            />
+                            <Area type="monotone" dataKey="visibility" name="Visibility (km)" stroke="#10b981" fillOpacity={1} fill="url(#colorVis)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </ChartWrapper>
@@ -295,19 +294,13 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={hourlyChartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(124,58,237,0.2)" />
-                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                            <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '11px' }} interval={3} />
+                            <YAxis stroke="#9ca3af" style={{ fontSize: '11px' }} />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#2d3561', border: '1px solid #7c3aed' }}
                                 labelStyle={{ color: '#e0e7ff' }}
                             />
-                            <Line
-                                type="monotone"
-                                dataKey="windSpeed"
-                                stroke="#f59e0b"
-                                dot={false}
-                                strokeWidth={2}
-                            />
+                            <Line type="monotone" dataKey="windSpeed" name="Wind (km/h)" stroke="#f59e0b" dot={false} strokeWidth={2} />
                         </LineChart>
                     </ResponsiveContainer>
                 </ChartWrapper>
@@ -316,21 +309,15 @@ export const CurrentWeather: React.FC<CurrentWeatherProps> = ({
                     <ResponsiveContainer width="100%" height={300}>
                         <ComposedChart data={hourlyChartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(124,58,237,0.2)" />
-                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                            <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                            <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '11px' }} interval={3} />
+                            <YAxis stroke="#9ca3af" style={{ fontSize: '11px' }} />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#2d3561', border: '1px solid #7c3aed' }}
                                 labelStyle={{ color: '#e0e7ff' }}
                             />
                             <Legend wrapperStyle={{ color: '#9ca3af' }} />
-                            <Bar dataKey="pm10" fill="#ef4444" name="PM10" opacity={0.8} />
-                            <Line
-                                type="monotone"
-                                dataKey="pm2_5"
-                                stroke="#8b5cf6"
-                                name="PM2.5"
-                                dot={false}
-                            />
+                            <Bar dataKey="pm10" fill="#ef4444" name="PM10 (μg/m³)" opacity={0.8} />
+                            <Line type="monotone" dataKey="pm2_5" stroke="#8b5cf6" name="PM2.5 (μg/m³)" dot={false} />
                         </ComposedChart>
                     </ResponsiveContainer>
                 </ChartWrapper>

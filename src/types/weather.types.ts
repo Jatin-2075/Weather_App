@@ -8,8 +8,8 @@ export interface WeatherData {
 
 export interface CurrentWeather {
   time: string;
-  temperature: number;
-  relative_humidity: number;
+  temperature_2m: number; 
+  relative_humidity_2m: number; 
   apparent_temperature: number;
   is_day: number;
   precipitation: number;
